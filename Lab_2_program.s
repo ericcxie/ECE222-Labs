@@ -27,8 +27,8 @@ ResetLUT
 ; Start processing the characters
 
 NextChar
-        	LDRB        R0, [R5]		; Read a character to convert to Morse Code
-        	ADD         R5, #1              ; point to next value for number of delays, jump by 1 byte
+        LDRB        R0, [R5]		; Read a character to convert to Morse Code
+        ADD         R5, #1              ; point to next value for number of delays, jump by 1 byte
 		TEQ         R0, #0              ; If we hit 0 (null at end of the string) then reset to the start of lookup table
 		BNE		ProcessChar	; If we have a character process it
 
@@ -84,10 +84,12 @@ ProcessChar	BL		CHAR2MORSE	; convert ASCII to Morse pattern in R1
 ;			pass ASCII character in R0, output in R1
 ;			index into MorseLuT must be by steps of 2 bytes
 CHAR2MORSE	STMFD		R13!,{R14}	; push Link Register (return address) on stack
-		;
 		... add code here to convert the ASCII to an index (subtract 41) and lookup the Morse patter in the Lookup Table
-		;
-		LDMFD		R13!,{R15}	; restore LR to R15 the Program Counter to return
+			
+			
+		
+			;
+			LDMFD		R13!,{R15}	; restore LR to R15 the Program Counter to return
 
 
 ; Turn the LED on, but deal with the stack in a simpler way
@@ -96,7 +98,7 @@ CHAR2MORSE	STMFD		R13!,{R14}	; push Link Register (return address) on stack
 LED_ON 	push 		{r3-r4}		; preserve R3 and R4 on the R13 stack
 		... insert your code here
 		MOV			R3, #0xA0000000
-		STR			R3, [r4, #0x20]
+		STR			R3, [R4,#0x20]
 		pop 		{r3-r4}
 		BX 		LR		; branch to the address in the Link Register.  Ie return to the caller
 
@@ -106,15 +108,24 @@ LED_ON 	push 		{r3-r4}		; preserve R3 and R4 on the R13 stack
 LED_OFF	STMFD		R13!,{R3, R14}	; push R3 and Link Register (return address) on stack
 		... insert your code here
 		MOV 		R3, #0xB0000000
-		STR 		R3, [r4, #0x20]
+		STR 		R3, [R4,#0x20]
 		LDMFD		R13!,{R3, R15}	; restore R3 and LR to R15 the Program Counter to return
 
 ;	Delay 500ms * R0 times
 ;	Use the delay loop from Lab-1 but loop R0 times around
 ;
 DELAY			STMFD		R13!,{R2, R14}
-MultipleDelay		TEQ		R0, #0		; test R0 to see if it's 0 - set Zero flag so you can use BEQ, BNE
-			... insert your code here
+MultipleDelay	TEQ		R0,  #0		; test R0 to see if it's 0 - set Zero flag so you can use BEQ, BNE
+... insert your code here
+				MOVT 	R10, #0x2C2A
+				MOV 	R10, #0xA
+				
+loop
+				SUBS 	R10, #1		; decrement counter R10 
+				BNE 	loop		
+				SUBS 	R0, #1
+				BEQ 	exitDelay
+				BNE		MultipleDelay
 exitDelay		LDMFD		R13!,{R2, R15}
 
 ;
@@ -128,7 +139,7 @@ exitDelay		LDMFD		R13!,{R2, R15}
 ; One way to provide a data to convert to Morse code is to use a string in memory.
 ; Simply read bytes of the string until the NULL or "0" is hit.  This makes it very easy to loop until done.
 ;
-InputLUT	DCB		"BIRD", 0	; strings must be stored, and read, as BYTES
+InputLUT	DCB		"JKEXS", 0	; strings must be stored, and read, as BYTES
 
 		ALIGN				; make sure things fall on word addresses
 MorseLUT 
