@@ -36,7 +36,37 @@ NextChar
 		BL		DELAY
 		BEQ         ResetLUT
 
-ProcessChar	BL		CHAR2MORSE	; convert ASCII to Morse pattern in R1		
+ProcessChar	BL		CHAR2MORSE	; convert ASCII to Morse pattern in R1	
+		CLZ		R2, R1 
+		LSL		R1, R2 ; remove zeros and store in R1   // R5 to R2
+		
+		; blink LEDs
+loop1
+		LSLS	R1, #1
+
+		BLCS	LED_ON
+		BLCC 	LED_OFF
+		
+		MOV 	R0, #1
+		BL 		DELAY
+		
+		CMP		R1, #0
+		BNE		loop1
+		
+		BL 		LED_OFF
+		MOV 	R0, #3
+		BL		DELAY
+		B		NextChar
+		
+		;BL		DELAY
+		
+		;LSL 	R1, #1
+		
+		;BNE		loop1
+		;BEQ		ProcessChar	
+		
+		
+		
 
 ;*************************************************************************************************************************************************
 ;*****************  These are alternate methods to read the bits in the Morse code LUT. You can use them or not **********************************
@@ -84,10 +114,12 @@ ProcessChar	BL		CHAR2MORSE	; convert ASCII to Morse pattern in R1
 ;			pass ASCII character in R0, output in R1
 ;			index into MorseLuT must be by steps of 2 bytes
 CHAR2MORSE	STMFD		R13!,{R14}	; push Link Register (return address) on stack
-		... add code here to convert the ASCII to an index (subtract 41) and lookup the Morse patter in the Lookup Table
-			
-			
-		
+	;	... add code here to convert the ASCII to an index (subtract 41) and lookup the Morse patter in the Lookup Table
+			SUBS	R0, #0x41 ; index in the lookup table
+			MOV 	R8, #2
+			MUL 	R0, R8 ; 
+			LDR 	R11, =MorseLUT ;
+			LDRH 	R1, [R11, R0] ;   		
 			;
 			LDMFD		R13!,{R15}	; restore LR to R15 the Program Counter to return
 
@@ -96,7 +128,7 @@ CHAR2MORSE	STMFD		R13!,{R14}	; push Link Register (return address) on stack
 ; NOTE: This method of returning from subroutine (BX  LR) does NOT work if subroutines are nested!!
 ;
 LED_ON 	push 		{r3-r4}		; preserve R3 and R4 on the R13 stack
-		... insert your code here
+;		... insert your code here
 		MOV			R3, #0xA0000000
 		STR			R3, [R4,#0x20]
 		pop 		{r3-r4}
@@ -105,20 +137,24 @@ LED_ON 	push 		{r3-r4}		; preserve R3 and R4 on the R13 stack
 ; Turn the LED off, but deal with the stack in the proper way
 ; the Link register gets pushed onto the stack so that subroutines can be nested
 ;
-LED_OFF	STMFD		R13!,{R3, R14}	; push R3 and Link Register (return address) on stack
-		... insert your code here
+LED_OFF	push 		{r3 -r4}
+		;STMFD		R13!,{R3, R14}	; push R3 and Link Register (return address) on stack
+;		... insert your code here
 		MOV 		R3, #0xB0000000
 		STR 		R3, [R4,#0x20]
-		LDMFD		R13!,{R3, R15}	; restore R3 and LR to R15 the Program Counter to return
+		
+		pop 		{r3-r4}
+		BX			LR
+		;LDMFD		R13!,{R3, R15}	; restore R3 and LR to R15 the Program Counter to return
 
 ;	Delay 500ms * R0 times
 ;	Use the delay loop from Lab-1 but loop R0 times around
 ;
 DELAY			STMFD		R13!,{R2, R14}
 MultipleDelay	TEQ		R0,  #0		; test R0 to see if it's 0 - set Zero flag so you can use BEQ, BNE
-... insert your code here
-				MOVT 	R10, #0x2C2A
-				MOV 	R10, #0xA
+; ... insert your code here
+				MOV 	R10, #0x2C2A
+				MOVT 	R10, #0xA
 				
 loop
 				SUBS 	R10, #1		; decrement counter R10 
