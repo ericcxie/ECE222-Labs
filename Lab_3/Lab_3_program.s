@@ -19,6 +19,9 @@ __MAIN
 ; Initializes R11 to a 16-bit non-zero value and NOTHING else can write to R11 !!
 				MOV			R11, #0xABCD		; Init the random number generator with a non-zero number
 loop 			BL 			RandomNum 
+				MOV			R9, #0 				; initialize counter
+
+				
 				B loop
 
 ;
@@ -67,8 +70,7 @@ DELAY			STMFD		R13!,{R2, R14}
 		; code to generate a delay of 0.1mS * R0 times
 		;
 MultipleDelay	TEQ		R0,  #0		; test R0 to see if it's 0 - set Zero flag so you can use BEQ, BNE
-; ... insert your code here
-				MOV 	R10, #133
+				MOV 	R10, #0x85		; 133 in decimal
 				
 loop1
 				SUBS 	R10, #1		; decrement counter R10 
