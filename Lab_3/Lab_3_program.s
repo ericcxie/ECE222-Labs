@@ -66,6 +66,16 @@ DELAY			STMFD		R13!,{R2, R14}
 		;
 		; code to generate a delay of 0.1mS * R0 times
 		;
+MultipleDelay	TEQ		R0,  #0		; test R0 to see if it's 0 - set Zero flag so you can use BEQ, BNE
+; ... insert your code here
+				MOV 	R10, #133
+				
+loop1
+				SUBS 	R10, #1		; decrement counter R10 
+				BNE 	loop1	
+				SUBS 	R0, #1
+				BEQ 	exitDelay
+				BNE		MultipleDelay
 exitDelay		LDMFD		R13!,{R2, R15}
 				
 
