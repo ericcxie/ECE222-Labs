@@ -19,8 +19,24 @@ __MAIN
 ; Initializes R11 to a 16-bit non-zero value and NOTHING else can write to R11 !!
 				MOV			R11, #0xABCD		; Init the random number generator with a non-zero number
 				
-loop 			;BL 			DISPLAY_NUM	;added for testing
+loop 			;BL 			DISPLAY_NUM	;added for counter demo
 				BL 			RandomNum 	;get random number into R11
+				
+				;implementing the scalling equation
+				MOV			R1, #9
+				MOV 		R2, #10000
+				MOV 		R3, #0			;this register will store the result of [RN/9] * 9
+				UDIV		R3, R11, R1		;next 3 lines are for implementing mod operation
+				MUL			R3, R3, R1
+				SUB			R11, R11, R3
+				ADD			R11, #2
+				MUL			R11, R2
+				
+				MOV			R1, #0			;resting R1,2,3 to prevent any issue
+				MOV			R2, #0
+				MOV			R3, #0
+				
+				;scalling end
 				
 				MOV			R0, R11
 				BL			DELAY	;delay for random number of time
@@ -35,43 +51,43 @@ loop 			;BL 			DISPLAY_NUM	;added for testing
 
 ;start of polling INTO button				
 poll			
-				MOV 		R0, #1
-				BL 			DELAY
-				ADD			R3, #1
+				MOV 		R0, #1		;Setting up a small delay for debouncing
+				BL 			DELAY		;delay for button debounce
+				ADD			R3, #1		;increment counter for a time taken for user input
 				LDR 		R1, =FIO2PIN	    ;get the push button address
-				LDR			R1, [R1]
-				LSR			R1, #10
-				BFI			R2, R1, #0, #1		;might need to use other register than R1
+				LDR			R1, [R1]	;load push button's state into R1
+				LSR			R1, #10		;shift to check specific bit that expresses rather button is pushed or not
+				BFI			R2, R1, #0, #1		;only inserting that specific bit into R2
 				
-				CMP			R2, #0
-				BNE			poll
-;end of polling INTO button
+				CMP			R2, #0		;compare button state with 0 / needs to be 0 when button is pushed
+				BNE			poll		;if button is not pressed, loop back to poll
+;end of polling INTO button	
 
 
-loop_display	MOV			R4, R3
-				MOV			R1, #4
+loop_display	MOV			R4, R3		;move the R3 counter value to R4 for display routine
+				MOV			R1, #4		;setting up loop counter for display iteration
 				
 				
 display
 				;Test
-				MOV 		R6, #0
+				MOV 		R6, #0		;initializing R6
 				
-				BFI			R6, R4, #0, #8
-				LSR			R4, #8
-				BL			DISPLAY_NUM
-				MOV			R0, #20000		
-				BL			DELAY
+				BFI			R6, R4, #0, #8	;getting the first 8 bits of R4 counter into R6
+				LSR			R4, #8			;
+				BL			DISPLAY_NUM		;call DISPLAY_NUM subroutine to display the number
+				MOV			R0, #20000		;2 seconds delay between each number display
+				BL			DELAY			; ""
 				
-				SUBS		R1, #1
+				SUBS		R1, #1			;subtracting 1 from R1 loop counter
 				;TEST
-				TEQ			R1, #0
-				BNE			display
+				TEQ			R1, #0			;testing if R1 is zero
+				BNE			display			;if R1 loop counter is not zero, loop back to display subroutine
 				
-				MOV			R0, #0
-				MOV 		R0, #50000
-				BL 			DELAY
+				MOV			R0, #0			;initializing R0 for longer loop
+				MOV 		R0, #50000		;5 second delay between every 4 display loop cycle
+				BL 			DELAY			; ""
 				
-				B			loop_display
+				B			loop_display	;branching back to the start of dispaly loop
 				B			display
 				
 				
@@ -81,7 +97,7 @@ display
 				
 				
 
-				B loop
+				B loop						;branching back to the start of the main loop
 
 ;
 ; Display the number in R3 onto the 8 LEDs
@@ -89,8 +105,8 @@ DISPLAY_NUM		STMFD		R13!,{R1, R2, R4, R14}
 
 ; Usefull commaands:  RBIT (reverse bits), BFC (bit field clear), LSR & LSL to shift bits left and right, ORR & AND and EOR for bitwise operations
 
-				;MOV			R6, #0x0		;counter
-				LDR			R5, =FIO1SET
+				;MOV			R6, #0x0		;required for counter demo
+				LDR			R5, =FIO1SET		;getting 
 				LDR			R7, =FIO2SET
 
 Counter			
@@ -101,38 +117,39 @@ Counter
 				AND			R1, R1, #0x7		;last 3 bits of R6
 				AND			R2, R6, #0x1F		;first 5 bits of R6
 				
-				MOV			R8, R1
-				AND			R1, R1, #1      
-				LSL 		R8, R8, #1
-				BIC			R8, R8, #2
-				ORR			R1, R1, R8
 				
-				RBIT		R1, R1
-				RBIT		R2, R2
+				MOV			R8, R1				;copying the masked last 3 bits to R8
+				AND			R1, R1, #1      	;isolating first significant bit of R1
+				LSL 		R8, R8, #1			;shifting R8 left by 1 bit
+				BIC			R8, R8, #2			;clearing bit 1 of R8
+				ORR			R1, R1, R8			;or operation on R8 and R1. this will be needed for correctly spacing out 3 bits for fio1set input
+				
+				RBIT		R1, R1				;reversing the bit order of R1
+				RBIT		R2, R2				;reversing the bit order of R2
 				;LSR			R2, #27
 				
 				;LSR			R1, R1, #4
-				LSR			R2, R2, #25
+				LSR			R2, R2, #25			;shifting R2 right by 25 bits to get the significant bits to the front of R2
 				
-				AND			R4, R2, #0x0000007C
-				AND			R9, R1, #0xB0000000
+				AND			R4, R2, #0x0000007C		;and operation on R2 to get the LEDs that needs to be on and save it to R4
+				AND			R9, R1, #0xB0000000		;and operation on R1 to get the LEDs that needs to be on and save it to R9
 				
-				STR 		R4, [R7]
-				STR			R9, [R5]
+				STR 		R4, [R7]			;store R4 into FIO2SET address to turn on the LEDs that needs to be on
+				STR			R9, [R5]			;store R9 into FIO1SET address to turn on the LEDs that needs to be on
 				
-				EOR			R4, R2, #0x0000007C
-				EOR			R9, R1, #0xB0000000
+				EOR			R4, R2, #0x0000007C		;exclusive or on R2 to get the LEDs that needs to be off and save it to R4
+				EOR			R9, R1, #0xB0000000		;exclusive or on R1 to get the LEDs that needs to be off and save it to R9
 				
-				STR			R4, [R7, #4]
-				STR			R9, [R5, #4]
+				STR			R4, [R7, #4]		;store R4 into FIO2CLR address to turn off the LEDs that needs to be off
+				STR			R9, [R5, #4]		;store R9 into FIO1CLR address to turn off the LEDs that needs to be off
 				
 				
 				
-				;MOV			R0, #1000	;1000
+				;MOV			R0, #1000	;counter demo
 				;BL			DELAY
 				
 				
-				; Counter part 2
+				; Counter demo part 2
 				;ADD 		R6, #1
 				;CMP 		R6, #256
 				;BNE			Counter
@@ -167,8 +184,6 @@ RandomNum		STMFD		R13!,{R1, R2, R3, R14}
 				LSL			R11, #1
 				ORR			R11, R11, R3
 				
-				;testing
-				;MOV			R11, #1
 				
 				LDMFD		R13!,{R1, R2, R3, R15}
 
@@ -186,7 +201,7 @@ DELAY			STMFD		R13!,{R2, R14}
 		; code to generate a delay of 0.1mS * R0 times
 		;
 MultipleDelay	TEQ			R0, #0 ;test R0 to see if it's 0 - set zero flag so you can use BEQ, BNE
-				MOV 		R10, #0x85    ;0x85 ;133
+				MOV 		R10, #133    ;0x85 ;133
 				
 loop1
 				SUBS		R10, #1
@@ -203,8 +218,8 @@ LED_BASE_ADR	EQU 	0x2009c000 		; Base address of the memory that controls the LE
 PINSEL3			EQU 	0x4002c00c 		; Address of Pin Select Register 3 for P1[31:16]
 PINSEL4			EQU 	0x4002c010 		; Address of Pin Select Register 4 for P2[15:0]
 
-FIO1SET			EQU		0x2009C038		
-FIO2SET			EQU		0x2009C058
+FIO1SET			EQU		0x2009C038		; FIO1SET address given in tutorial slide
+FIO2SET			EQU		0x2009C058		; FIO2Set address given in tutorial slide
 	
 FIO2PIN			EQU		0x2009C054		;address for push button
 ;	Usefull GPIO Registers
