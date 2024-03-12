@@ -91,8 +91,7 @@ display
 				B			display
 				
 				
-				
-				
+
 				
 				
 				
@@ -197,11 +196,10 @@ RandomNum		STMFD		R13!,{R1, R2, R3, R14}
 
 ;DELAY START
 DELAY			STMFD		R13!,{R2, R14}
-		;
-		; code to generate a delay of 0.1mS * R0 times
-		;
+
+
 MultipleDelay	TEQ			R0, #0 ;test R0 to see if it's 0 - set zero flag so you can use BEQ, BNE
-				MOV 		R10, #133    ;0x85 ;133
+				MOV 		R10, #95    ;0x85 ;133
 				
 loop1
 				SUBS		R10, #1
