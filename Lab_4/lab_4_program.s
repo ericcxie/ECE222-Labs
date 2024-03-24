@@ -184,7 +184,6 @@ IF_ZERO
 					LDR			R1, =IO2IntClr
 					MOV			R2, #0x400
 					STR			R2, [R1]
-					BX LR
 		
 					LDMFD 		R13!, {R1, R2, R4, R14}				; Use this command if you used STMFD (otherwise use BX LR) 
 
