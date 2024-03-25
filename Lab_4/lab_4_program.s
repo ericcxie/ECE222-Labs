@@ -11,6 +11,23 @@
 
 __MAIN
 
+				;Setting up for IRQ Handler
+				MOV			R3, #0
+				LDR			R3, =ISER0
+				MOV 		R2, #0x00200000 	;enabling ISE_EINT3 by setting 21th bit to 1
+				STR			R2, [R3]
+				
+				MOV 		R3, #0
+				LDR			R3, =IO2IntEnf
+				MOV			R2, #0x400	;enabling GPIO Interrupt by setting 10th bit to 1
+				STR			R2, [R3]
+				
+				;MOV			R3, #0
+				;LDR			R3, =IO2IntClr
+				;MOV			R2, #0x400
+				;STR			R2, [R3]
+						
+				
 ; The following lines are similar to previous labs.
 ; They just turn off all LEDs 
 				LDR			R10, =LED_BASE_ADR		; R10 is a  pointer to the base address for the LEDs
@@ -22,21 +39,10 @@ __MAIN
 ; This line is very important in your main program
 ; Initializes R11 to a 16-bit non-zero value and NOTHING else can write to R11 !!
 				MOV			R11, #0xABCD		; Init the random number generator with a non-zero number
-LOOP 			        BL 			RNG 
-				;Random number scaling
-				MOV			R6, R11
-				MOV			R3, #21
-				MOV			R4, #0
-				UDIV		R4, R6, R3
-				MUL			R4, R4, R3
-				SUBS		R6, R6, R4
-				ADD			R6, #5
-				MOV			R1, #10
-				MUL			R6, R6, R1
-				MOV			R1, #0
+LOOP 			BL 			RNG 
 
+				;continue flashing
 				
-FLASHING		
 				LDR			R5, =FIO1SET
 				LDR			R7, =FIO2SET
 				
@@ -54,18 +60,8 @@ FLASHING
 				
 				MOV			R0, #1
 				BL			DELAY
-				
-				;Setting up for IRQ Handler
-				MOV			R3, #0
-				LDR			R3, =ISER0
-				MOV 		R2, #0x00200000 	;enabling ISE_EINT3 by setting 21th bit to 1
-				STR			R2, [R3]
-				
-				MOV 		R3, #0
-				LDR			R3, =IO2IntEnf
-				MOV			R2, #0x00000400	;enabling GPIO Interrupt by setting 10th bit to 1
-				STR			R2, [R3]
-				
+
+								
 				B			LOOP		
 		;
 		; Your main program can appear here 
@@ -104,10 +100,11 @@ DELAY			STMFD		R13!,{R2, R14}
 		; Code to generate a delay of 100mS * R0 times
 		;
 MultipleDelay	TEQ			R0, #0 ;test R0 to see if it's 0 - set zero flag so you can use BEQ, BNE
-				MOV32 		R10, #133333    ;0x85 ;133 133333
+				MOV32 		R10, #100000   ;0x85 ;133 133333
 				
-loop1
-				SUBS		R10, #1
+loop1			
+				CMP			R10, #0
+				SUBNE		R10, #1
 				BNE			loop1
 				SUBS		R0, #1
 				BEQ			exitDelay
@@ -119,8 +116,7 @@ exitDelay		LDMFD		R13!,{R2, R15}
 ; Display Number
 
 DISPLAY_NUM		STMFD		R13!, {R1, R2, R4, R14}
-				
-Counter			
+					
 				LSR			R1, R6, #5		;getting the last 3 bits of 8 bit input
 				
 				AND			R1, R1, #0x7	;last 3 bits of R6 input
@@ -148,10 +144,7 @@ Counter
 				
 				STR			R4, [R7, #4]
 				STR			R9, [R5, #4]
-				
-				B exitCounter
-				
-exitCounter		
+					
 				LDMFD		R13!, {R1, R2, R4, R15}
 
 ; The Interrupt Service Routine MUST be in the startup file for simulation 
@@ -163,29 +156,45 @@ exitCounter
 ; This ISR handles the interrupt triggered when the INT0 push-button is pressed 
 ; with the assumption that the interrupt activation is done in the main program
 EINT3_IRQHandler 	
-					STMFD 		R13!, {R1, R2, R4, R14}				; Use this command if you need it  
+					STMFD 		R13!, {R1, R2, R4, R5, R6, R7, R14}				; Use this command if you need it  
+					
+					;Random number scaling
+					MOV			R6, R11
+					MOV			R3, #21
+					MOV			R4, #0
+					UDIV		R4, R6, R3
+					MUL			R4, R4, R3
+					SUBS		R6, R6, R4
+					ADD			R6, #5
+					MOV			R1, #10
+					MUL			R6, R6, R1
+					MOV			R1, #0
 
 HANDLER		
+					CMP 		R6, #0
+					BEQ			IF_ZERO
+					BMI			IF_ZERO
 					
 					BL			DISPLAY_NUM
-					SUBS		R6, #10
-					
-					BEQ			IF_ZERO		;Branch if Z flag is set (=0)
-					BMI			IF_ZERO		;Branch if N flag is set (<0)
-					
+					SUB			R6, #10
 					MOV			R0, #10
-					BL			DELAY
+					BL 			DELAY
+					B			HANDLER
 					
-					B 			HANDLER
 					
 IF_ZERO				
 					MOV 		R6, #0
 					BL			DISPLAY_NUM
+					
+					
 					LDR			R1, =IO2IntClr
 					MOV			R2, #0x400
 					STR			R2, [R1]
+					
+					MOV			R10, #1
 		
-					LDMFD 		R13!, {R1, R2, R4, R14}				; Use this command if you used STMFD (otherwise use BX LR) 
+					
+					LDMFD 		R13!, {R1, R2, R4, R5, R6, R7, R15}				; Use this command if you used STMFD (otherwise use BX LR) 
 
 
 ;*-------------------------------------------------------------------
