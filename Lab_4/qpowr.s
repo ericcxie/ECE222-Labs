@@ -126,7 +126,7 @@ exitDelay		LDMFD		R13!,{R2, R15}
 DISPLAY_NUM		STMFD		R13!, {R1, R2, R4, R5, R7, R14}
 				
 Counter			
-				LSR			R1, R4, #5		;getting the last 3 bits of 8 bit input
+				LSR			R1, R3, #5		;getting the last 3 bits of 8 bit input
 				
 				AND			R1, R1, #0x7	;last 3 bits of R6 input
 				AND			R2, R4, #0x1F	;first 5 bits of R6
