@@ -22,15 +22,9 @@ __MAIN
 				MOV			R2, #0x400	;enabling GPIO Interrupt by setting 10th bit to 1
 				STR			R2, [R3]
 				
-				;MOV			R3, #0
-				;LDR			R3, =IO2IntClr
-				;MOV			R2, #0x400
-				;STR			R2, [R3]
-						
-				
 ; The following lines are similar to previous labs.
 ; They just turn off all LEDs 
-				LDR			R10, =LED_BASE_ADR		; R10 is a  pointer to the base address for the LEDs
+				LDR			R10, =LED_BASE_ADR	; R10 is a  pointer to the base address for the LEDs
 				MOV 		R3, #0xB0000000		; Turn off three LEDs on port 1  
 				STR 		R3, [r10, #0x20]
 				MOV 		R3, #0x0000007C
@@ -50,7 +44,7 @@ LOOP 			BL 			RNG
 				MOV			R2, #0xB0000000
 				
 				STR			R1, [R7]		;turing on all LEDs
-				STR 		R2, [R5]
+				STR 		R2, [R5]		
 				
 				MOV			R0, #1			;calling for 0.1 sec of delay
 				BL 			DELAY
@@ -58,7 +52,7 @@ LOOP 			BL 			RNG
 				STR			R1, [R7, #4]	;adding #4 to FIO?SET will make it to FIO?CLR address
 				STR			R2, [R5, #4]	;turing off all LEDs
 				
-				MOV			R0, #1
+				MOV			R0, #1   		;calling for 0.1 sec of delay
 				BL			DELAY
 
 								
@@ -67,8 +61,7 @@ LOOP 			BL 			RNG
 		; Your main program can appear here 
 		;
 				
-				
-				
+					
 ;*------------------------------------------------------------------- 
 ; Subroutine RNG ... Generates a pseudo-Random Number in R11 
 ;*------------------------------------------------------------------- 
@@ -100,15 +93,15 @@ DELAY			STMFD		R13!,{R2, R14}
 		; Code to generate a delay of 100mS * R0 times
 		;
 MultipleDelay	TEQ			R0, #0 ;test R0 to see if it's 0 - set zero flag so you can use BEQ, BNE
-				MOV32 		R10, #100000   ;0x85 ;133 133333
+				MOV32 		R10, #100000   
 				
 loop1			
 				CMP			R10, #0
-				SUBNE		R10, #1
-				BNE			loop1
+				SUBNE		R10, #1 ; If R10 is not 0 (NE - Not Equal), subtract 1 from R10
+				BNE			loop1 	; If R10 is not 0, branch back to loop1
 				SUBS		R0, #1
-				BEQ			exitDelay
-				BNE			MultipleDelay
+				BEQ			exitDelay  ; If the result is 0 (R0 is now 0), branch to exitDelay
+				BNE			MultipleDelay	; If the result is not 0 (R0 is now not 0), branch back to MultipleDelay
 		
 exitDelay		LDMFD		R13!,{R2, R15}
 
@@ -128,7 +121,7 @@ DISPLAY_NUM		STMFD		R13!, {R1, R2, R4, R14}
 				BIC			R8, R8, #2		;clearing bit 1 of R8
 				ORR			R1, R1, R8		;or operation on R8 and R1. This will be needed for correctly spacing out 3 bits for fio1set input
 				
-				RBIT		R1, R1			;revresing the bit order of R1
+				RBIT		R1, R1			;reversing the bit order of R1
 				RBIT		R2, R2			; ''R2
 				
 				LSR			R2, R2, #25 	;shifting R2 right by 25 bits to get the significant bits to the front of R2
@@ -158,7 +151,7 @@ DISPLAY_NUM		STMFD		R13!, {R1, R2, R4, R14}
 EINT3_IRQHandler 	
 					STMFD 		R13!, {R1, R2, R4, R5, R6, R7, R14}				; Use this command if you need it  
 					
-					;Random number scaling
+					; Random number scaling ((RN % 21) + 5) * 10
 					MOV			R6, R11
 					MOV			R3, #21
 					MOV			R4, #0
@@ -172,12 +165,12 @@ EINT3_IRQHandler
 
 HANDLER		
 					CMP 		R6, #0
-					BEQ			IF_ZERO
-					BMI			IF_ZERO
+					BEQ			IF_ZERO 	; If R6 is 0, branch to IF_ZERO
+					BMI			IF_ZERO		; If R6 is negative, branch to IF_ZERO
 					
 					BL			DISPLAY_NUM
-					SUB			R6, #10
-					MOV			R0, #10
+					SUB			R6, #10		; Decrement R6 by 10
+					MOV			R0, #10		; Add a delay of 1 second
 					BL 			DELAY
 					B			HANDLER
 					
@@ -186,7 +179,7 @@ IF_ZERO
 					MOV 		R6, #0
 					BL			DISPLAY_NUM
 					
-					
+					; Resetting the interrupt
 					LDR			R1, =IO2IntClr
 					MOV			R2, #0x400
 					STR			R2, [R1]
